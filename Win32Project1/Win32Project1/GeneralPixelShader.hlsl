@@ -10,6 +10,14 @@ texture2D baseTexture : register(t0); // first texture
 
 SamplerState filter : register(s0); // filter 0 using CLAMP, filter 1 using WRAP
 
+cbuffer LIGHT : register(b0)
+{
+	float4 position;
+	float4 direction;
+	float4 ratios; // Inner, outer, radius, on or off
+	float4 color;
+}
+
 // Pixel shader performing multi-texturing with a detail texture on a second UV channel
 // A simple optimization would be to pack both UV sets into a single register
 float4 main(P_IN input) : SV_TARGET
@@ -30,12 +38,12 @@ float4 main(P_IN input) : SV_TARGET
 	float4 pointLightDirFinalColor = pointLightDirRatio * pointLightDirColor * pointLightDirAttenuation;
 
 	// Spotlight
-	float3 spotlightPos = { 0, 0.1f, 2 };
-	float4 spotlightColor = { 0, 0, 1, 1 };
+	float3 spotlightPos = position.xyz;
+	float4 spotlightColor = color;
 	float3 spotlightDir = normalize(spotlightPos - input.posW.xyz);
-	float3 coneDir = { 0, 0, -1 };
-	float coneRatio = 0.8f;
-	float spotlightRadius = 10;
+	float3 coneDir = direction.xyz;
+	float coneRatio = ratios.y;
+	float spotlightRadius = ratios.z;
 	float surfaceRatio = saturate(dot(spotlightDir, coneDir));
 	float spotFactor = (surfaceRatio > coneRatio) ? 1 : 0;
 	float spotlightRatio = saturate(dot(spotlightDir, normalize(input.nrmOut.xyz)));
@@ -45,7 +53,12 @@ float4 main(P_IN input) : SV_TARGET
 	float2 uvs = float2(input.uvsOut.x, input.uvsOut.y);
 	float4 baseColor = baseTexture.Sample(filter, uvs); // get base color
 
-	float4 returnColor = baseColor * (lightDirFinalColor + pointLightDirFinalColor + spotlightFinalColor);
+	float4 lightColor = lightDirFinalColor;
+	lightColor += pointLightDirFinalColor;
+	if (ratios.w == 1)
+		lightColor += spotlightFinalColor;
+
+	float4 returnColor = baseColor * lightColor;
 
 	return returnColor;
 }

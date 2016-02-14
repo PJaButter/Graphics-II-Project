@@ -57,6 +57,7 @@ class DEMO_APP
 	
 	ID3D11Buffer* constantBuffer[3];
 	const unsigned int numConstantBuffers = 3;
+	ID3D11Buffer* lightConstantBuffer;
 	ID3D11Buffer* starIndexBuffer = nullptr;
 	unsigned int starNumIndicies = 60; 
 
@@ -72,10 +73,21 @@ class DEMO_APP
 		XMMATRIX viewMatrix;
 		XMMATRIX projectionMatrix;
 	};
+
+	struct SEND_TO_PS
+	{
+		XMFLOAT4 position;
+		XMFLOAT4 direction;
+		XMFLOAT4 ratios;
+		XMFLOAT4 color;
+	};
 	
 	SEND_TO_OBJECT toObject;
 	SEND_TO_OBJECT toStarObject;
 	SEND_TO_SCENE toScene;
+	SEND_TO_PS toPS;
+
+	int spotlightOn = 0;
 
 public:
 
@@ -197,11 +209,11 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	triangleWorldMatrix = XMMatrixTranslation(2, 2, 3);
 
 	ViewMatricies[0] = XMMatrixIdentity();
-	ViewMatricies[1] = XMMatrixRotationX(5);
-	ViewMatricies[1] = XMMatrixMultiply(ViewMatricies[1], XMMatrixTranslation(0, 30, 0));
+	ViewMatricies[1] = XMMatrixRotationX(XMConvertToRadians(-90));
+	ViewMatricies[1] = XMMatrixMultiply(XMMatrixTranslation(0, -10, 0), ViewMatricies[1]);
 
 	ProjectionMatricies[0] = XMMatrixPerspectiveFovLH(XMConvertToRadians(65), ASPECTRATIO, NEARPLANE, FARPLANE);
-	ProjectionMatricies[1] = XMMatrixPerspectiveFovLH(XMConvertToRadians(65), ASPECTRATIO, NEARPLANE, FARPLANE);
+	ProjectionMatricies[1] = XMMatrixPerspectiveFovLH(XMConvertToRadians(90), ASPECTRATIO, NEARPLANE, FARPLANE);
 
 	D3D11_BUFFER_DESC starBufferDesc = {};
 	starBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
@@ -272,6 +284,17 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	(subresourceDesc5.pSysMem) = &toStarObject;
 
 	result = device->CreateBuffer(&bufferDesc5, &subresourceDesc5, &constantBuffer[2]);
+
+	D3D11_BUFFER_DESC bufferDesc6 = {};
+	bufferDesc6.Usage = D3D11_USAGE_DYNAMIC;
+	bufferDesc6.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	bufferDesc6.ByteWidth = sizeof(SEND_TO_PS);
+	bufferDesc6.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+
+	D3D11_SUBRESOURCE_DATA subresourceDesc6;
+	(subresourceDesc6.pSysMem) = &toPS;
+
+	result = device->CreateBuffer(&bufferDesc6, &subresourceDesc6, &lightConstantBuffer);
 
 	D3D11_BUFFER_DESC starIndexBufferDesc = {};
 	starIndexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
@@ -366,12 +389,12 @@ bool DEMO_APP::Run()
 	if (GetAsyncKeyState('W'))
 	{
 		ViewMatricies[0] = XMMatrixMultiply(XMMatrixTranslation(0, 0, 3.5f * (float)timer.Delta()), ViewMatricies[0]);
-		ViewMatricies[1] = XMMatrixMultiply(XMMatrixTranslation(0, 0, 3.5f * (float)timer.Delta()), ViewMatricies[1]);
+		ViewMatricies[1] = XMMatrixMultiply(XMMatrixTranslation(0, 3.5f * (float)timer.Delta(), 0), ViewMatricies[1]);
 	}
 	if (GetAsyncKeyState('S'))
 	{
 		ViewMatricies[0] = XMMatrixMultiply(XMMatrixTranslation(0, 0, -3.5f * (float)timer.Delta()), ViewMatricies[0]);
-		ViewMatricies[1] = XMMatrixMultiply(XMMatrixTranslation(0, 0, -3.5f * (float)timer.Delta()), ViewMatricies[1]);
+		ViewMatricies[1] = XMMatrixMultiply(XMMatrixTranslation(0, -3.5f * (float)timer.Delta(), 0), ViewMatricies[1]);
 	}
 	if (GetAsyncKeyState('A'))
 	{
@@ -425,6 +448,14 @@ bool DEMO_APP::Run()
 		antialiasedEnabled = false;
 	}
 
+	if (GetAsyncKeyState('F') & 0x01)
+	{
+		if (spotlightOn == 0)
+			spotlightOn = 1;
+		else
+			spotlightOn = 0;
+	}
+
 	float color[4] = { 0, 0, 1, 1 };
 	deviceContext->ClearRenderTargetView(renderTargetView, color);
 	//if (GetCursorPos(&mousePos))
@@ -456,7 +487,32 @@ bool DEMO_APP::Run()
 		temp2[1] = ProjectionMatricies[currentViewport];
 		deviceContext->Unmap(constantBuffer[1], 0);
 
-		deviceContext->VSSetConstantBuffers(0, numConstantBuffers, constantBuffer);
+		if (spotlightOn == 1)
+		{
+			XMMatrixInverse(nullptr, ViewMatricies[currentViewport]);
+			toPS.color = XMFLOAT4(1, 1, 1, 1);
+			toPS.position.x = ViewMatricies[currentViewport].r[3].m128_f32[0];
+			toPS.position.y = ViewMatricies[currentViewport].r[3].m128_f32[1];
+			toPS.position.z = ViewMatricies[currentViewport].r[3].m128_f32[2];
+			toPS.position.w = ViewMatricies[currentViewport].r[3].m128_f32[3];
+			toPS.direction.x = ViewMatricies[currentViewport].r[2].m128_f32[0];
+			toPS.direction.y = ViewMatricies[currentViewport].r[2].m128_f32[1];
+			toPS.direction.z = ViewMatricies[currentViewport].r[2].m128_f32[2];
+			toPS.direction.w = ViewMatricies[currentViewport].r[2].m128_f32[3];
+			toPS.ratios.x = 0.88f;
+			toPS.ratios.y = 0.8f;
+			toPS.ratios.z = 10;
+			toPS.ratios.w = (float)spotlightOn;
+			XMMatrixInverse(nullptr, ViewMatricies[currentViewport]);
+		}
+
+		D3D11_MAPPED_SUBRESOURCE mapped3;
+		deviceContext->Map(lightConstantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped3);
+		SEND_TO_PS* temp3 = ((SEND_TO_PS*)mapped3.pData);
+		*temp3 = toPS;
+		deviceContext->Unmap(lightConstantBuffer, 0);
+
+		deviceContext->PSSetConstantBuffers(0, 1, &lightConstantBuffer);
 
 		cube1.Run(deviceContext);
 
@@ -572,6 +628,7 @@ bool DEMO_APP::ShutDown()
 	SAFE_RELEASE(layout);
 	for (unsigned int i = 0; i < numConstantBuffers; ++i)
 		SAFE_RELEASE(constantBuffer[i]);
+	SAFE_RELEASE(lightConstantBuffer);
 	SAFE_RELEASE(starIndexBuffer);
 	SAFE_RELEASE(depthStencil);
 	SAFE_RELEASE(depthStencilView);
@@ -657,8 +714,8 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam 
 
 			deviceContext->OMSetRenderTargets(1, &renderTargetView, depthStencilView);
 			
-			viewports[0].Width = width;
-			viewports[0].Height = height;
+			viewports[0].Width = (float)width;
+			viewports[0].Height = (float)height;
 			viewports[0].MinDepth = 0.0f;
 			viewports[0].MaxDepth = 1.0f;
 			viewports[0].TopLeftX = 0;
@@ -674,7 +731,7 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam 
 			deviceContext->RSSetViewports(1, &viewports[0]);
 
 			ProjectionMatricies[0] = XMMatrixPerspectiveFovLH(XMConvertToRadians(65), (float)width / (float)height, NEARPLANE, FARPLANE);
-			ProjectionMatricies[1] = XMMatrixPerspectiveFovLH(XMConvertToRadians(65), (float)viewports[1].Width / (float)viewports[1].Height, NEARPLANE, FARPLANE);
+			ProjectionMatricies[1] = XMMatrixPerspectiveFovLH(XMConvertToRadians(90), (float)viewports[1].Width / (float)viewports[1].Height, NEARPLANE, FARPLANE);
 
 			texture->Release();
 			res->Release();
