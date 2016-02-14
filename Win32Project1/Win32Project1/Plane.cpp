@@ -1,6 +1,6 @@
 #include "Plane.h"
-#include "PlaneVertexShader.csh"
-#include "PlanePixelShader.csh"
+#include "GeneralVertexShader.csh"
+#include "GeneralPixelShader.csh"
 #include "DDSTextureLoader.h"
 
 #define NUMVERTICIES 24
@@ -46,8 +46,8 @@ void Plane::Initialize(ID3D11Device* device, float initX, float initY, float ini
 
 	result = device->CreateBuffer(&bufferDesc, &subresourceDesc, &buffer);
 
-	result = device->CreateVertexShader(PlaneVertexShader, sizeof(PlaneVertexShader), NULL, &vertexShader);
-	result = device->CreatePixelShader(PlanePixelShader, sizeof(PlanePixelShader), NULL, &pixelShader);
+	result = device->CreateVertexShader(GeneralVertexShader, sizeof(GeneralVertexShader), NULL, &vertexShader);
+	result = device->CreatePixelShader(GeneralPixelShader, sizeof(GeneralPixelShader), NULL, &pixelShader);
 
 	D3D11_INPUT_ELEMENT_DESC inputLayout[] =
 	{
@@ -63,7 +63,7 @@ void Plane::Initialize(ID3D11Device* device, float initX, float initY, float ini
 
 	result = device->CreateSamplerState(&samplerDesc, &sampler);
 
-	result = device->CreateInputLayout(inputLayout, 3, PlaneVertexShader, sizeof(PlaneVertexShader), &layout);
+	result = device->CreateInputLayout(inputLayout, 3, GeneralVertexShader, sizeof(GeneralVertexShader), &layout);
 
 	toObject.worldMatrix = worldMatrix;
 
@@ -155,13 +155,17 @@ void Plane::CreateVerticies()
 {
 	verticies[0].pos = XMFLOAT3(-50, 0, 50);
 	verticies[0].uvw = XMFLOAT3(0, 0, 0);
+	verticies[0].nrm = XMFLOAT3(0, 1, 0);
 	
 	verticies[1].pos = XMFLOAT3(50, 0, 50);
 	verticies[1].uvw = XMFLOAT3(50, 0, 0);
+	verticies[1].nrm = XMFLOAT3(0, 1, 0);
 	
 	verticies[2].pos = XMFLOAT3(-50, 0, -50);
 	verticies[2].uvw = XMFLOAT3(0, 50, 0);
+	verticies[2].nrm = XMFLOAT3(0, 1, 0);
 	
 	verticies[3].pos = XMFLOAT3(50, 0, -50);
 	verticies[3].uvw = XMFLOAT3(50, 50, 0);
+	verticies[3].nrm = XMFLOAT3(0, 1, 0);
 }

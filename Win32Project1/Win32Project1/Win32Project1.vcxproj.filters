@@ -72,8 +72,6 @@
     <FxCompile Include="StarPixelShader.hlsl" />
     <FxCompile Include="SkyBoxPixelShader.hlsl" />
     <FxCompile Include="SkyBoxVertexShader.hlsl" />
-    <FxCompile Include="PlanePixelShader.hlsl" />
-    <FxCompile Include="PlaneVertexShader.hlsl" />
     <FxCompile Include="GeneralPixelShader.hlsl" />
     <FxCompile Include="GeneralVertexShader.hlsl" />
     <FxCompile Include="PointToQuadGeometryShader.hlsl" />

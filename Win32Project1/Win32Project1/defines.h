@@ -6,6 +6,8 @@
 #include <Windows.h>
 #include <vector>
 #include <fstream>
+#include <thread>
+#include <mutex>
 
 using namespace std;
 
@@ -21,7 +23,7 @@ using namespace DirectX;
 #define ASPECTRATIO (BACKBUFFER_WIDTH / BACKBUFFER_HEIGHT)
 #define NEARPLANE 0.1f
 #define FARPLANE 100
-
+#define NUMVIEWPORTS 2
 
 struct SIMPLE_VERTEX
 {
