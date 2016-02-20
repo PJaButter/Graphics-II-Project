@@ -13,7 +13,6 @@ struct V_OUT
 	float4 uvsOut : TEXTPOS;
 	float4 nrmOut : NORMALS;
 	float4 posW : POSITION;
-	float4x4 world : WORLD;
 };
 
 cbuffer OBJECT : register( b0 )
@@ -43,7 +42,6 @@ V_OUT main( V_IN input )
 	output.posH = localH;
 	output.uvsOut = input.uvsIn;
 	output.nrmOut = mul(float4(input.nrmIn.xyz, 0), worldMatrix);
-	output.world = worldMatrix;
 
 	return output; // send projected vertex to the rasterizer stage
 }

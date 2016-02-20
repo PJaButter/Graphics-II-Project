@@ -4,7 +4,6 @@ struct P_IN
 	float4 uvsOut : TEXTPOS;
 	float4 nrmOut : NORMALS;
 	float4 posW : POSITION;
-	float4x4 world : WORLD;
 };
 
 texture2D baseTexture : register(t0); // first texture
@@ -39,16 +38,16 @@ float4 main(P_IN input) : SV_TARGET
 	float4 pointLightDirFinalColor = pointLightDirRatio * pointLightDirColor * pointLightDirAttenuation;
 
 	// Spotlight
-	float3 spotlightPos = mul(position.xyz, input.world);
+	float3 spotlightPos = position.xyz;
 	float4 spotlightColor = color;
 	float3 spotlightDir = normalize(spotlightPos - input.posW.xyz);
-	float3 coneDir = mul(input.world, direction.xyz);
+	float3 coneDir = direction.xyz;
 	float coneRatio = ratios.y;
 	float spotlightRadius = ratios.z;
 	float surfaceRatio = saturate(dot(-spotlightDir, coneDir));
 	float spotFactor = (surfaceRatio > coneRatio) ? 1 : 0;
 	float spotlightRatio = saturate(dot(spotlightDir, normalize(input.nrmOut.xyz)));
-	float spotlightDirAttenuation = 1.0f - saturate(length(spotlightPos - input.posW.xyz) / spotlightRadius);
+	float spotlightDirAttenuation = 1.0f - saturate((ratios.x - surfaceRatio) / (ratios.x - ratios.y));
 	float4 spotlightFinalColor = spotFactor * spotlightRatio * spotlightColor * spotlightDirAttenuation;
 
 	float2 uvs = float2(input.uvsOut.x, input.uvsOut.y);
