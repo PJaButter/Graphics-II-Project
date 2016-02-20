@@ -80,6 +80,7 @@ class DEMO_APP
 		XMFLOAT4 direction;
 		XMFLOAT4 ratios;
 		XMFLOAT4 color;
+		XMFLOAT4X4 worldMatrix;
 	};
 	
 	SEND_TO_OBJECT toObject;
@@ -487,24 +488,21 @@ bool DEMO_APP::Run()
 		temp2[1] = ProjectionMatricies[currentViewport];
 		deviceContext->Unmap(constantBuffer[1], 0);
 
-		if (spotlightOn == 1)
-		{
-			XMMatrixInverse(nullptr, ViewMatricies[currentViewport]);
-			toPS.color = XMFLOAT4(1, 1, 1, 1);
-			toPS.position.x = ViewMatricies[currentViewport].r[3].m128_f32[0];
-			toPS.position.y = ViewMatricies[currentViewport].r[3].m128_f32[1];
-			toPS.position.z = ViewMatricies[currentViewport].r[3].m128_f32[2];
-			toPS.position.w = ViewMatricies[currentViewport].r[3].m128_f32[3];
-			toPS.direction.x = ViewMatricies[currentViewport].r[2].m128_f32[0];
-			toPS.direction.y = ViewMatricies[currentViewport].r[2].m128_f32[1];
-			toPS.direction.z = ViewMatricies[currentViewport].r[2].m128_f32[2];
-			toPS.direction.w = ViewMatricies[currentViewport].r[2].m128_f32[3];
-			toPS.ratios.x = 0.88f;
-			toPS.ratios.y = 0.8f;
-			toPS.ratios.z = 10;
-			toPS.ratios.w = (float)spotlightOn;
-			XMMatrixInverse(nullptr, ViewMatricies[currentViewport]);
-		}
+		XMMatrixInverse(nullptr, ViewMatricies[currentViewport]);
+		toPS.color = XMFLOAT4(1, 1, 1, 1);
+		toPS.position.x = -ViewMatricies[currentViewport].r[3].m128_f32[0];
+		toPS.position.y = ViewMatricies[currentViewport].r[3].m128_f32[1];
+		toPS.position.z = -ViewMatricies[currentViewport].r[3].m128_f32[2];
+		toPS.position.w = ViewMatricies[currentViewport].r[3].m128_f32[3];
+		toPS.direction.x = ViewMatricies[currentViewport].r[2].m128_f32[0];
+		toPS.direction.y = ViewMatricies[currentViewport].r[2].m128_f32[1];
+		toPS.direction.z = ViewMatricies[currentViewport].r[2].m128_f32[2];
+		toPS.direction.w = ViewMatricies[currentViewport].r[2].m128_f32[3];
+		toPS.ratios.x = 0.88f;
+		toPS.ratios.y = 0.8f;
+		toPS.ratios.z = 10;
+		toPS.ratios.w = (float)spotlightOn;
+		XMMatrixInverse(nullptr, ViewMatricies[currentViewport]);
 
 		D3D11_MAPPED_SUBRESOURCE mapped3;
 		deviceContext->Map(lightConstantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped3);
@@ -588,7 +586,7 @@ bool DEMO_APP::Run()
 		deviceContext->VSSetShader(vertexShader, NULL, 0);
 		deviceContext->PSSetShader(pixelShader, NULL, 0);
 		deviceContext->IASetInputLayout(layout);
-		deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+		deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		deviceContext->DrawIndexed(starNumIndicies, 0, 0);
 
 		vertexSize = sizeof(SIMPLE_VERTEX);
