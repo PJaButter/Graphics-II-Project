@@ -96,6 +96,7 @@ void Cube3D::Run(ID3D11DeviceContext* deviceContext)
 	unsigned int offset = 0;
 	deviceContext->IASetVertexBuffers(0, 1, &buffer, &vertexSize, &offset);
 	deviceContext->VSSetShader(vertexShader, NULL, 0);
+	deviceContext->GSSetShader(nullptr, nullptr, 0);
 	deviceContext->PSSetShader(pixelShader, NULL, 0);
 	deviceContext->IASetInputLayout(layout);
 	deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);	

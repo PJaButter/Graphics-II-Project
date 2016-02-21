@@ -1,5 +1,6 @@
 #pragma once
 #include "defines.h"
+#define NUM_RASTER_STATES 2
 
 class LoadedModel3D
 {
@@ -40,6 +41,8 @@ private:
 	ID3D11InputLayout* layout;
 	ID3D11ShaderResourceView* shaderResourceView;
 	ID3D11SamplerState* sampler;
+	ID3D11BlendState* blendState;
+	ID3D11RasterizerState* rasterizerStates[NUM_RASTER_STATES];
 	Vertex* verticies;
 	unsigned int* indicies;
 

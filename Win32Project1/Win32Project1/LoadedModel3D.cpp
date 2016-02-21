@@ -21,6 +21,9 @@ LoadedModel3D::~LoadedModel3D()
 	SAFE_RELEASE(indexBuffer);
 	SAFE_RELEASE(shaderResourceView);
 	SAFE_RELEASE(sampler);
+	SAFE_RELEASE(blendState);
+	for (int i = 0; i < NUM_RASTER_STATES; i++)
+		SAFE_RELEASE(rasterizerStates[i]);
 	delete[] verticies;
 	delete[] indicies;
 }
@@ -74,6 +77,27 @@ void LoadedModel3D::Initialize(ID3D11Device* device, float initX, float initY, f
 	indexInitData.pSysMem = indicies;
 
 	result = device->CreateBuffer(&indexBufferDesc, &indexInitData, &indexBuffer);
+
+	D3D11_BLEND_DESC blendDesc = {};
+	blendDesc.AlphaToCoverageEnable = false;
+	blendDesc.RenderTarget[0].BlendEnable = true;
+	blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+	blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+	blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+	blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+	blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+	blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+	blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+	result = device->CreateBlendState(&blendDesc, &blendState);
+
+	D3D11_RASTERIZER_DESC rasterDesc1 = {};
+	rasterDesc1.AntialiasedLineEnable = false;
+	rasterDesc1.FillMode = D3D11_FILL_SOLID;
+	rasterDesc1.CullMode = D3D11_CULL_BACK;
+	result = device->CreateRasterizerState(&rasterDesc1, &rasterizerStates[0]);
+
+	rasterDesc1.CullMode = D3D11_CULL_FRONT;
+	result = device->CreateRasterizerState(&rasterDesc1, &rasterizerStates[1]);
 }
 
 void LoadedModel3D::Run(ID3D11DeviceContext* deviceContext)
@@ -82,6 +106,8 @@ void LoadedModel3D::Run(ID3D11DeviceContext* deviceContext)
 
 	unsigned int vertexSize = sizeof(Vertex);
 	unsigned int offset = 0;
+
+
 	deviceContext->IASetVertexBuffers(0, 1, &buffer, &vertexSize, &offset);
 	deviceContext->VSSetShader(vertexShader, NULL, 0);
 	deviceContext->PSSetShader(pixelShader, NULL, 0);
@@ -89,7 +115,14 @@ void LoadedModel3D::Run(ID3D11DeviceContext* deviceContext)
 	deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	deviceContext->PSSetShaderResources(0, 1, &shaderResourceView);
 	deviceContext->PSSetSamplers(0, 1, &sampler);
+	deviceContext->GSSetShader(nullptr, nullptr, 0);
+	deviceContext->OMSetBlendState(blendState, NULL, 0xffffffff);
+	deviceContext->RSSetState(rasterizerStates[1]);
 	deviceContext->DrawIndexed(numIndicies, 0, 0);
+	deviceContext->RSSetState(rasterizerStates[0]);
+	deviceContext->DrawIndexed(numIndicies, 0, 0);
+	deviceContext->RSSetState(nullptr);
+	deviceContext->OMSetBlendState(NULL, NULL, 0xffffffff);
 }
 
 void LoadedModel3D::Translate(float offsetX, float offsetY, float offsetZ)

@@ -40,7 +40,7 @@ class DEMO_APP
 	Cube3D cube1, cube2;
 	SkyBox skyBox;
 	Plane floor;
-	LoadedModel3D brazier, turret;// , willowTree;
+	LoadedModel3D brazier, turret, willowTree;
 	PointToQuad pointToQuad;
 	vector<thread> threads;
 	
@@ -53,7 +53,6 @@ class DEMO_APP
 	ID3D11RasterizerState* rasterizerStateEnabled = nullptr;
 	ID3D11RasterizerState* rasterizerStateDisabled = nullptr;
 	bool antialiasedEnabled = true;
-	ID3D11BlendState* blendState = nullptr;
 	
 	ID3D11Buffer* constantBuffer[3];
 	const unsigned int numConstantBuffers = 3;
@@ -134,7 +133,7 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	swapChainDesc.BufferDesc = modeDesc;
 	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 	swapChainDesc.BufferCount = 1;
-	swapChainDesc.SampleDesc.Count = 1; // Number of msaa
+	swapChainDesc.SampleDesc.Count = 2; // Number of msaa
 	swapChainDesc.OutputWindow = window;
 	swapChainDesc.Windowed = true;
 	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
@@ -231,12 +230,16 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	descDepth.MipLevels = 1;
 	descDepth.ArraySize = 1;
 	descDepth.Format = DXGI_FORMAT_D32_FLOAT;
-	descDepth.SampleDesc.Count = 1;
+	descDepth.SampleDesc.Count = 2;
 	descDepth.Usage = D3D11_USAGE_DEFAULT;
 	descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL;
 	result = device->CreateTexture2D(&descDepth, NULL, &depthStencil);
 
-	result = device->CreateDepthStencilView(depthStencil, nullptr, &depthStencilView);
+	D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc = {};
+	depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DMS;
+	depthStencilViewDesc.Format = DXGI_FORMAT_D32_FLOAT;
+
+	result = device->CreateDepthStencilView(depthStencil, &depthStencilViewDesc, &depthStencilView);
 
 	result = device->CreateVertexShader(StarVertexShader, sizeof(StarVertexShader), NULL, &vertexShader);
 	result = device->CreatePixelShader(StarPixelShader, sizeof(StarPixelShader), NULL, &pixelShader);
@@ -356,8 +359,8 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	for (int i = 0; i < threads.size(); ++i)
 		threads[i].join();
 
-	//const wchar_t* treeFilename = L"treeWillow.dds";
-	//willowTree.Initialize(device, 0, -1, 10, treeFilename, "willowtree.obj");
+	const wchar_t* treeFilename = L"treeWillow.dds";
+	willowTree.Initialize(device, 0, -1, 30, treeFilename, "willowtree.obj");
 
 	D3D11_RASTERIZER_DESC rasterDesc = {};
 	rasterDesc.AntialiasedLineEnable = true;
@@ -543,14 +546,6 @@ bool DEMO_APP::Run()
 
 		pointToQuad.Run(deviceContext);
 
-		//deviceContext->Map(constantBuffer[0], 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
-		//temp = ((XMMATRIX*)mapped.pData);
-		//*temp = willowTree.GetWorldMatrix();
-		//deviceContext->Unmap(constantBuffer[0], 0);
-		//deviceContext->VSSetConstantBuffers(0, numConstantBuffers, constantBuffer);
-
-		//willowTree.Run(deviceContext);
-
 		deviceContext->Map(constantBuffer[0], 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
 		temp = ((XMMATRIX*)mapped.pData);
 		XMMATRIX tempMatrix = XMMatrixIdentity();
@@ -563,6 +558,14 @@ bool DEMO_APP::Run()
 		deviceContext->VSSetConstantBuffers(0, numConstantBuffers, constantBuffer);
 
 		skyBox.Run(deviceContext);
+
+		deviceContext->Map(constantBuffer[0], 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+		temp = ((XMMATRIX*)mapped.pData);
+		*temp = willowTree.GetWorldMatrix();
+		deviceContext->Unmap(constantBuffer[0], 0);
+		deviceContext->VSSetConstantBuffers(0, numConstantBuffers, constantBuffer);
+
+		willowTree.Run(deviceContext);
 
 		deviceContext->Map(constantBuffer[2], 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
 		temp = ((XMMATRIX*)mapped.pData);
@@ -632,7 +635,6 @@ bool DEMO_APP::ShutDown()
 	SAFE_RELEASE(starBuffer);
 	SAFE_RELEASE(rasterizerStateEnabled);
 	SAFE_RELEASE(rasterizerStateDisabled);
-	SAFE_RELEASE(blendState);
 
 	UnregisterClass( L"DirectXApplication", application ); 
 	return true;
@@ -700,7 +702,7 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam 
 			descDepth.MipLevels = 1;
 			descDepth.ArraySize = 1;
 			descDepth.Format = DXGI_FORMAT_D32_FLOAT;
-			descDepth.SampleDesc.Count = 1;
+			descDepth.SampleDesc.Count = 2;
 			descDepth.Usage = D3D11_USAGE_DEFAULT;
 			descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL;
 			result = device->CreateTexture2D(&descDepth, NULL, &depthStencil);
