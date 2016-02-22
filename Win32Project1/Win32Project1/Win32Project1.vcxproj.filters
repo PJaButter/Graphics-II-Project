@@ -39,6 +39,9 @@
     <ClCompile Include="PointToQuad.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="InstancedCube3D.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="XTime.h">
@@ -65,6 +68,9 @@
     <ClInclude Include="PointToQuad.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="InstancedCube3D.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Trivial_VS.hlsl" />
@@ -77,6 +83,7 @@
     <FxCompile Include="PointToQuadGeometryShader.hlsl" />
     <FxCompile Include="PointToQuadVertexShader.hlsl" />
     <FxCompile Include="PointToQuadPixelShader.hlsl" />
+    <FxCompile Include="InstancingVertexShader.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="SkyboxOcean.dds" />

@@ -79,7 +79,7 @@ void LoadedModel3D::Initialize(ID3D11Device* device, float initX, float initY, f
 	result = device->CreateBuffer(&indexBufferDesc, &indexInitData, &indexBuffer);
 
 	D3D11_BLEND_DESC blendDesc = {};
-	blendDesc.AlphaToCoverageEnable = false;
+	blendDesc.AlphaToCoverageEnable = true;
 	blendDesc.RenderTarget[0].BlendEnable = true;
 	blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
 	blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;

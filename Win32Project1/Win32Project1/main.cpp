@@ -10,6 +10,7 @@
 #include "StarPixelShader.csh"
 #include "GeneralVertexShader.csh"
 #include "GeneralPixelShader.csh"
+#include "InstancedCube3D.h"
 #include "Cube3D.h"
 #include "PointToQuad.h"
 #include "Trivial_PS.csh"
@@ -38,6 +39,7 @@ class DEMO_APP
 	XMMATRIX ViewMatricies[2];
 
 	Cube3D cube1, cube2;
+	InstancedCube3D instCube;
 	SkyBox skyBox;
 	Plane floor;
 	LoadedModel3D brazier, turret, willowTree;
@@ -54,8 +56,8 @@ class DEMO_APP
 	ID3D11RasterizerState* rasterizerStateDisabled = nullptr;
 	bool antialiasedEnabled = true;
 	
-	ID3D11Buffer* constantBuffer[3];
-	const unsigned int numConstantBuffers = 3;
+	ID3D11Buffer* constantBuffer[4];
+	const unsigned int numConstantBuffers = 4;
 	ID3D11Buffer* lightConstantBuffer;
 	ID3D11Buffer* starIndexBuffer = nullptr;
 	unsigned int starNumIndicies = 60; 
@@ -65,6 +67,11 @@ class DEMO_APP
 	struct SEND_TO_OBJECT
 	{
 		XMMATRIX worldMatrix;
+	};
+
+	struct SEND_TO_INST_OBJECT
+	{
+		XMMATRIX worldMatrix[6];
 	};
 
 	struct SEND_TO_SCENE
@@ -78,11 +85,13 @@ class DEMO_APP
 		XMFLOAT4 position;
 		XMFLOAT4 direction;
 		XMFLOAT4 ratios;
-		XMFLOAT4 color;
+		XMFLOAT3 color;
+		float padding;
 	};
 	
 	SEND_TO_OBJECT toObject;
 	SEND_TO_OBJECT toStarObject;
+	SEND_TO_INST_OBJECT toInstObject;
 	SEND_TO_SCENE toScene;
 	SEND_TO_PS toPS;
 
@@ -342,6 +351,9 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	const wchar_t* filename2 = L"Box_wood01.dds";
 	threads.push_back(thread(&Cube3D::Initialize, &cube2, device, 0, 5, 10, filename2));
 
+	const wchar_t* filename3 = L"Box_wood01.dds";
+	threads.push_back(thread(&InstancedCube3D::Initialize, &instCube, device, 0, 0, 20, filename3));
+
 	const wchar_t* skyBoxFilename = L"SkyBoxCube.dds";
 	threads.push_back(thread(&SkyBox::Initialize, &skyBox, device, 0, 0, 0, skyBoxFilename, true));
 
@@ -374,6 +386,20 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	rasterDesc2.FillMode = D3D11_FILL_SOLID;
 	rasterDesc2.CullMode = D3D11_CULL_BACK;
 	result = device->CreateRasterizerState(&rasterDesc2, &rasterizerStateDisabled);
+
+	for (int i = 0; i < 6; ++i)
+		toInstObject.worldMatrix[i] = instCube.GetWorldMatrix(i);
+
+	D3D11_BUFFER_DESC bufferDesc7 = {};
+	bufferDesc7.Usage = D3D11_USAGE_DYNAMIC;
+	bufferDesc7.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	bufferDesc7.ByteWidth = sizeof(SEND_TO_INST_OBJECT);
+	bufferDesc7.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+
+	D3D11_SUBRESOURCE_DATA subresourceDesc7;
+	(subresourceDesc7.pSysMem) = &toInstObject;
+
+	result = device->CreateBuffer(&bufferDesc7, &subresourceDesc7, &constantBuffer[3]);
 
 	timer.Restart();
 
@@ -491,7 +517,7 @@ bool DEMO_APP::Run()
 		deviceContext->Unmap(constantBuffer[1], 0);
 
 		ViewMatricies[currentViewport] = XMMatrixInverse(nullptr, ViewMatricies[currentViewport]);
-		toPS.color = XMFLOAT4(1, 1, 1, 1);
+		toPS.color = XMFLOAT3(1, 1, 1);
 		toPS.position.x = ViewMatricies[currentViewport].r[3].m128_f32[0];
 		toPS.position.y = ViewMatricies[currentViewport].r[3].m128_f32[1];
 		toPS.position.z = ViewMatricies[currentViewport].r[3].m128_f32[2];
@@ -524,6 +550,19 @@ bool DEMO_APP::Run()
 
 		cube2.Run(deviceContext);
 
+		deviceContext->Map(constantBuffer[3], 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+		SEND_TO_INST_OBJECT* temp4 = ((SEND_TO_INST_OBJECT*)mapped.pData);
+		temp4->worldMatrix[0] = instCube.GetWorldMatrix(0);
+		temp4->worldMatrix[1] = instCube.GetWorldMatrix(1);
+		temp4->worldMatrix[2] = instCube.GetWorldMatrix(2);
+		temp4->worldMatrix[3] = instCube.GetWorldMatrix(3);
+		temp4->worldMatrix[4] = instCube.GetWorldMatrix(4);
+		temp4->worldMatrix[5] = instCube.GetWorldMatrix(5);
+		deviceContext->Unmap(constantBuffer[3], 0);
+		deviceContext->VSSetConstantBuffers(0, numConstantBuffers, constantBuffer);
+
+		instCube.Run(deviceContext);
+
 		deviceContext->Map(constantBuffer[0], 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
 		temp = ((XMMATRIX*)mapped.pData);
 		*temp = brazier.GetWorldMatrix();
@@ -537,6 +576,8 @@ bool DEMO_APP::Run()
 		*temp = turret.GetWorldMatrix();
 		deviceContext->Unmap(constantBuffer[0], 0);
 		deviceContext->VSSetConstantBuffers(0, numConstantBuffers, constantBuffer);
+
+		turret.Run(deviceContext);
 
 		deviceContext->Map(constantBuffer[0], 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
 		temp = ((XMMATRIX*)mapped.pData);
@@ -558,14 +599,6 @@ bool DEMO_APP::Run()
 		deviceContext->VSSetConstantBuffers(0, numConstantBuffers, constantBuffer);
 
 		skyBox.Run(deviceContext);
-
-		deviceContext->Map(constantBuffer[0], 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
-		temp = ((XMMATRIX*)mapped.pData);
-		*temp = willowTree.GetWorldMatrix();
-		deviceContext->Unmap(constantBuffer[0], 0);
-		deviceContext->VSSetConstantBuffers(0, numConstantBuffers, constantBuffer);
-
-		willowTree.Run(deviceContext);
 
 		deviceContext->Map(constantBuffer[2], 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
 		temp = ((XMMATRIX*)mapped.pData);
@@ -601,6 +634,14 @@ bool DEMO_APP::Run()
 
 		// Draw Floor
 		floor.Run(deviceContext);
+
+		deviceContext->Map(constantBuffer[0], 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+		temp = ((XMMATRIX*)mapped.pData);
+		*temp = willowTree.GetWorldMatrix();
+		deviceContext->Unmap(constantBuffer[0], 0);
+		deviceContext->VSSetConstantBuffers(0, numConstantBuffers, constantBuffer);
+
+		willowTree.Run(deviceContext);
 	}
 
 	if (antialiasedEnabled)
@@ -707,7 +748,11 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam 
 			descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL;
 			result = device->CreateTexture2D(&descDepth, NULL, &depthStencil);
 
-			result = device->CreateDepthStencilView(depthStencil, nullptr, &depthStencilView);
+			D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc = {};
+			depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DMS;
+			depthStencilViewDesc.Format = DXGI_FORMAT_D32_FLOAT;
+
+			result = device->CreateDepthStencilView(depthStencil, &depthStencilViewDesc, &depthStencilView);
 
 			buffer->Release();
 

@@ -161,6 +161,7 @@
   <ItemGroup>
     <ClCompile Include="Cube3D.cpp" />
     <ClCompile Include="DDSTextureLoader.cpp" />
+    <ClCompile Include="InstancedCube3D.cpp" />
     <ClCompile Include="LoadedModel3D.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Plane.cpp" />
@@ -172,6 +173,7 @@
     <ClInclude Include="Cube3D.h" />
     <ClInclude Include="DDSTextureLoader.h" />
     <ClInclude Include="defines.h" />
+    <ClInclude Include="InstancedCube3D.h" />
     <ClInclude Include="LoadedModel3D.h" />
     <ClInclude Include="Plane.h" />
     <ClInclude Include="PointToQuad.h" />
@@ -179,6 +181,12 @@
     <ClInclude Include="XTime.h" />
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="InstancingVertexShader.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+    </FxCompile>
     <FxCompile Include="PointToQuadGeometryShader.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Geometry</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
