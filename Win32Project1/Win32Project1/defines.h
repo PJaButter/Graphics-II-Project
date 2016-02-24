@@ -36,7 +36,9 @@ struct Vertex
 	XMFLOAT3 pos;
 	XMFLOAT3 uvw;
 	XMFLOAT3 nrm;
+	XMFLOAT4 tan;
 };
 
 // Function Prototypes
 XMMATRIX Movement(float time);
+vector<int> SortByDepth(float distances[], int numItems);

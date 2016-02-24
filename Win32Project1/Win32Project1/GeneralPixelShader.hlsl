@@ -40,6 +40,11 @@ float4 main(P_IN input) : SV_TARGET
 	float3 pointLightDirColor = { 1, 0, 0 };
 	float pointLightDirAttenuation = 1.0f - saturate(length(pointLightPos - input.posW.xyz) / pointLightRadius);
 	float3 pointLightDirFinalColor = pointLightDirRatio * pointLightDirColor * pointLightDirAttenuation * baseColor.xyz;
+	float3 toPointLight = normalize(pointLightPos - input.posW.xyz);
+	float3 toCamera = normalize(position.xyz - input.posW.xyz);
+	float3 pointLightReflection = normalize(reflect(-toPointLight, normalize(input.nrmOut.xyz)));
+	float  pointLightSpecRatio = pow(dot(pointLightReflection, toCamera), 256);
+	float3 pointLightSpecColor = pointLightDirFinalColor * pointLightSpecRatio * 1.0f;
 
 	// Spotlight
 	float3 spotlightPos = position.xyz;
@@ -52,19 +57,17 @@ float4 main(P_IN input) : SV_TARGET
 	float spotFactor = (surfaceRatio > coneRatio) ? 1 : 0;
 	float spotlightRatio = saturate(dot(spotlightDir, normalize(input.nrmOut.xyz)));
 	
-	float3 spotlightViewDir = normalize(position.xyz - input.posW.xyz);
-	float3 spotlightHalfVector = normalize((spotlightDir) + spotlightViewDir);
-	float spotlightIntensity = max(pow(saturate(dot(input.nrmOut, normalize(spotlightHalfVector))), 32), 0);
-	
 	float spotlightDirAttenuation = 1.0f - saturate((ratios.x - surfaceRatio) / (ratios.x - ratios.y));
 	float3 spotlightFinalColor = spotFactor * spotlightRatio * spotlightColor * spotlightDirAttenuation * baseColor.xyz;
-	
-	spotlightFinalColor = spotlightFinalColor * 1.0f * spotlightIntensity;
+	float3 toSpotlight = normalize(spotlightPos - input.posW.xyz);
+	float3 spotlightReflection = normalize(reflect(-toSpotlight, normalize(input.nrmOut.xyz)));
+	float spotlightSpecRatio = pow(dot(spotlightReflection, toCamera), 256);
+	float3 spotlightSpecColor = spotlightFinalColor * spotlightSpecRatio * 1.0f;
 
 	float3 lightColor = lightDirFinalColor;
-	lightColor += pointLightDirFinalColor;
+	lightColor += pointLightDirFinalColor + pointLightSpecColor;
 	if (ratios.w == 1)
-		lightColor += spotlightFinalColor;
+		lightColor += spotlightFinalColor + spotlightSpecColor;
 
 	float4 returnColor = saturate(float4(lightColor, baseColor.a));
 

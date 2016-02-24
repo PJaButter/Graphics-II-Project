@@ -1,7 +1,6 @@
 #include "LoadedModel3D.h"
 #include "GeneralVertexShader.csh"
 #include "GeneralPixelShader.csh"
-#include "SkyBoxPixelShader.csh"
 #include "DDSTextureLoader.h"
 
 #define SAFE_RELEASE(p) { if(p) {p->Release(); p = nullptr;}}
@@ -64,7 +63,7 @@ void LoadedModel3D::Initialize(ID3D11Device* device, float initX, float initY, f
 
 	result = device->CreateSamplerState(&samplerDesc, &sampler);
 
-	result = device->CreateInputLayout(inputLayout, 3, GeneralVertexShader, sizeof(GeneralVertexShader), &layout);
+	result = device->CreateInputLayout(inputLayout, ARRAYSIZE(inputLayout), GeneralVertexShader, sizeof(GeneralVertexShader), &layout);
 
 	toObject.worldMatrix = worldMatrix;
 

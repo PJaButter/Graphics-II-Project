@@ -42,6 +42,9 @@
     <ClCompile Include="InstancedCube3D.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="NormalMappedLoadedModel3D.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="XTime.h">
@@ -71,6 +74,9 @@
     <ClInclude Include="InstancedCube3D.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="NormalMappedLoadedModel3D.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Trivial_VS.hlsl" />
@@ -84,6 +90,8 @@
     <FxCompile Include="PointToQuadVertexShader.hlsl" />
     <FxCompile Include="PointToQuadPixelShader.hlsl" />
     <FxCompile Include="InstancingVertexShader.hlsl" />
+    <FxCompile Include="NormalMappedVertexShader.hlsl" />
+    <FxCompile Include="NormalMappedPixelShader.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="SkyboxOcean.dds" />

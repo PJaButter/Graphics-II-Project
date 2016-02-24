@@ -164,6 +164,7 @@
     <ClCompile Include="InstancedCube3D.cpp" />
     <ClCompile Include="LoadedModel3D.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="NormalMappedLoadedModel3D.cpp" />
     <ClCompile Include="Plane.cpp" />
     <ClCompile Include="PointToQuad.cpp" />
     <ClCompile Include="SkyBox.cpp" />
@@ -175,6 +176,7 @@
     <ClInclude Include="defines.h" />
     <ClInclude Include="InstancedCube3D.h" />
     <ClInclude Include="LoadedModel3D.h" />
+    <ClInclude Include="NormalMappedLoadedModel3D.h" />
     <ClInclude Include="Plane.h" />
     <ClInclude Include="PointToQuad.h" />
     <ClInclude Include="SkyBox.h" />
@@ -182,6 +184,18 @@
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="InstancingVertexShader.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="NormalMappedPixelShader.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="NormalMappedVertexShader.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>

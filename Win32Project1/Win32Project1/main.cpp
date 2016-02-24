@@ -14,6 +14,7 @@
 #include "Cube3D.h"
 #include "PointToQuad.h"
 #include "Trivial_PS.csh"
+#include "NormalMappedLoadedModel3D.h"
 
 IDXGISwapChain*					swapChain = nullptr;
 ID3D11DeviceContext*			deviceContext = nullptr;
@@ -42,7 +43,8 @@ class DEMO_APP
 	InstancedCube3D instCube;
 	SkyBox skyBox;
 	Plane floor;
-	LoadedModel3D brazier, turret, willowTree;
+	LoadedModel3D brazier, willowTree[3];
+	NormalMappedLoadedModel3D turret;
 	PointToQuad pointToQuad;
 	vector<thread> threads;
 	
@@ -364,15 +366,23 @@ DEMO_APP::DEMO_APP(HINSTANCE hinst, WNDPROC proc)
 	threads.push_back(thread(&LoadedModel3D::Initialize, &brazier, device, 7, -1, 10, brazierFilename, "brazier.obj"));
 
 	const wchar_t* turretFilename = L"T_HeavyTurret_D.dds";
-	threads.push_back(thread(&LoadedModel3D::Initialize, &turret, device, -7, -1, 10, turretFilename, "turret.obj"));
+	const wchar_t* turretNormalMapFilename = L"T_HeavyTurret_N.dds";
+	threads.push_back(thread(&NormalMappedLoadedModel3D::Initialize, &turret, device, -7, -1, 10, turretFilename, turretNormalMapFilename, "turret.obj"));
 
 	pointToQuad.Initialize(device, 0, 0, 10);
 
+	const wchar_t* treeFilename1 = L"glass.dds";
+	threads.push_back(thread(&LoadedModel3D::Initialize, &willowTree[0], device, 0, 0, 30, treeFilename1, "cube.obj"));
+
+	const wchar_t* treeFilename2 = L"glass.dds";
+	threads.push_back(thread(&LoadedModel3D::Initialize, &willowTree[1], device, 0, 0, 32, treeFilename2, "cube.obj"));
+
+	const wchar_t* treeFilename3 = L"glass.dds";
+	threads.push_back(thread(&LoadedModel3D::Initialize, &willowTree[2], device, 0, 0, 34, treeFilename3, "cube.obj"));
+
+
 	for (int i = 0; i < threads.size(); ++i)
 		threads[i].join();
-
-	const wchar_t* treeFilename = L"treeWillow.dds";
-	willowTree.Initialize(device, 0, -1, 30, treeFilename, "willowtree.obj");
 
 	D3D11_RASTERIZER_DESC rasterDesc = {};
 	rasterDesc.AntialiasedLineEnable = true;
@@ -635,13 +645,24 @@ bool DEMO_APP::Run()
 		// Draw Floor
 		floor.Run(deviceContext);
 
-		deviceContext->Map(constantBuffer[0], 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
-		temp = ((XMMATRIX*)mapped.pData);
-		*temp = willowTree.GetWorldMatrix();
-		deviceContext->Unmap(constantBuffer[0], 0);
-		deviceContext->VSSetConstantBuffers(0, numConstantBuffers, constantBuffer);
+		float distances[3];
+		distances[0] = XMVector4Length(willowTree[0].GetWorldMatrix().r[3] - ViewMatricies[currentViewport].r[3]).m128_f32[0];
+		distances[1] = XMVector4Length(willowTree[1].GetWorldMatrix().r[3] - ViewMatricies[currentViewport].r[3]).m128_f32[0];
+		distances[2] = XMVector4Length(willowTree[2].GetWorldMatrix().r[3] - ViewMatricies[currentViewport].r[3]).m128_f32[0];
 
-		willowTree.Run(deviceContext);
+		vector<int> transparentIndicies = SortByDepth(distances, 3);
+
+		for (int i = 0; i < (int)transparentIndicies.size(); ++i)
+		{
+			deviceContext->Map(constantBuffer[0], 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+			temp = ((XMMATRIX*)mapped.pData);
+			*temp = willowTree[transparentIndicies[i]].GetWorldMatrix();
+			deviceContext->Unmap(constantBuffer[0], 0);
+			deviceContext->VSSetConstantBuffers(0, numConstantBuffers, constantBuffer);
+
+			willowTree[transparentIndicies[i]].Run(deviceContext);
+
+		}
 	}
 
 	if (antialiasedEnabled)
@@ -827,4 +848,25 @@ XMMATRIX Movement(float time)
 	}
 
 	return matrix;
+}
+
+vector<int> SortByDepth(float distances[], int numItems)
+{
+	vector<int> indicies;
+	indicies.push_back(0);
+	indicies.push_back(1);
+	indicies.push_back(2);
+
+	for (int i = 1; i < numItems; ++i)
+	{
+		int counter = i;
+		while (counter > 0 && (distances[counter] > distances[counter - 1]))
+		{
+			swap(distances[counter], distances[counter - 1]);
+			swap(indicies[counter], indicies[counter - 1]);
+			counter--;
+		}
+	}
+
+	return indicies;
 }
