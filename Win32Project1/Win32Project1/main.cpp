@@ -583,7 +583,7 @@ bool DEMO_APP::Run()
 
 		deviceContext->Map(constantBuffer[0], 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
 		temp = ((XMMATRIX*)mapped.pData);
-		*temp = turret.GetWorldMatrix();
+		*temp = XMMatrixMultiply(XMMatrixRotationY((float)timer.TotalTime() * 0.15f), turret.GetWorldMatrix());
 		deviceContext->Unmap(constantBuffer[0], 0);
 		deviceContext->VSSetConstantBuffers(0, numConstantBuffers, constantBuffer);
 

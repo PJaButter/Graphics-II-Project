@@ -1,3 +1,5 @@
+#pragma pack_matrix(row_major)
+
 struct P_IN
 {
 	float4 posH : SV_POSITION;
@@ -46,7 +48,7 @@ float4 main(P_IN input) : SV_TARGET
 	float3 lightDirFinalColor = lightDirRatio * lightDirColor * baseColor.xyz;
 
 	// Point Lighting
-	float3 pointLightPos = { -1, 0, 0 };
+	float3 pointLightPos = { -5, 0, 8 };
 	float pointLightRadius = 20.0f;
 	float3 pointLightDir = normalize(pointLightPos - input.posW.xyz);
 		float pointLightDirRatio = saturate(dot(pointLightDir, normalize(newNormal.xyz)));
